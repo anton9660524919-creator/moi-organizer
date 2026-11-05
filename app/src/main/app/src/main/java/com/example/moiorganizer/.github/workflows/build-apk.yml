@@ -21,13 +21,29 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Check AndroidManifest XML
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+
+          path = "app/src/main/AndroidManifest.xml"
+          print("Проверяем файл:", path)
+
+          try:
+              ET.parse(path)
+              print("XML корректен")
+          except ET.ParseError as e:
+              print("ОШИБКА XML:", e)
+              raise
+          PY
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Build APK with detailed error
-        run: gradle assembleDebug --stacktrace --info
+      - name: Build APK
+        run: gradle assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
