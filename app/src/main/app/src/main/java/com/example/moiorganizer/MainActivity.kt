@@ -1,3 +1,4 @@
+
 package com.example.moiorganizer
 
 import android.app.Activity
@@ -11,29 +12,63 @@ import android.content.Context
 
 class MainActivity : Activity() {
 
-    private val sections = listOf(
-        "🛒 Покупки",
-        "💰 Финансы",
-        "📅 Календарь",
-        "🔔 Напоминания",
-        "📦 Имущество",
-        "📁 Документы",
-        "🏠 Дом",
-        "📝 Заметки"
-    )
-
-    private lateinit var content: LinearLayout
     private lateinit var prefs: android.content.SharedPreferences
 
-    private val green = Color.rgb(53, 107, 97)
     private val background = Color.rgb(246, 247, 249)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        prefs = getSharedPreferences("organizer_data", Context.MODE_PRIVATE)
+        try {
+            prefs = getSharedPreferences("organizer_data", Context.MODE_PRIVATE)
 
-        showHome()
+            val previousError = prefs.getString("last_error", null)
+            if (previousError != null) {
+                showError("Предыдущая ошибка запуска:\n\n$previousError")
+                prefs.edit().remove("last_error").apply()
+                return
+            }
+
+            showHome()
+
+        } catch (e: Throwable) {
+            showError(e.stackTraceToString())
+        }
+    }
+
+    private fun showError(message: String) {
+        val root = LinearLayout(this)
+        root.orientation = LinearLayout.VERTICAL
+        root.setPadding(20, 30, 20, 20)
+        root.setBackgroundColor(Color.WHITE)
+
+        val title = TextView(this)
+        title.text = "Ошибка запуска"
+        title.textSize = 24f
+        title.setTypeface(null, Typeface.BOLD)
+        title.setTextColor(Color.RED)
+        root.addView(title)
+
+        val details = TextView(this)
+        details.text = message
+        details.textSize = 13f
+        details.setTextColor(Color.BLACK)
+        details.setTextIsSelectable(true)
+
+        val scroll = ScrollView(this)
+        scroll.addView(details)
+
+        root.addView(
+            scroll,
+            LinearLayout.LayoutParams(-1, 0, 1f)
+        )
+
+        setContentView(root)
+
+        try {
+            prefs.edit().putString("last_error", message).apply()
+        } catch (_: Throwable) {
+        }
     }
 
     private fun baseLayout(title: String): LinearLayout {
@@ -49,7 +84,6 @@ class MainActivity : Activity() {
         header.setPadding(20, 22, 16, 18)
 
         root.addView(header)
-
         return root
     }
 
@@ -59,6 +93,17 @@ class MainActivity : Activity() {
         button.setOnClickListener { action() }
         return button
     }
+
+    private val sections = listOf(
+        "🛒 Покупки",
+        "💰 Финансы",
+        "📅 Календарь",
+        "🔔 Напоминания",
+        "📦 Имущество",
+        "📁 Документы",
+        "🏠 Дом",
+        "📝 Заметки"
+    )
 
     private fun showHome() {
         val root = baseLayout("Мой органайзер")
@@ -86,19 +131,12 @@ class MainActivity : Activity() {
                 button.isAllCaps = false
                 button.setBackgroundColor(Color.WHITE)
 
-                val params = LinearLayout.LayoutParams(
-                    0,
-                    115,
-                    1f
-                )
+                val params = LinearLayout.LayoutParams(0, 115, 1f)
                 params.setMargins(5, 5, 5, 5)
-
                 row.addView(button, params)
 
                 val section = sections[j]
-                button.setOnClickListener {
-                    showSection(section)
-                }
+                button.setOnClickListener { showSection(section) }
             }
 
             grid.addView(row)
@@ -107,11 +145,7 @@ class MainActivity : Activity() {
         scroll.addView(grid)
         root.addView(
             scroll,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
+            LinearLayout.LayoutParams(-1, 0, 1f)
         )
 
         val footer = TextView(this)
@@ -127,31 +161,23 @@ class MainActivity : Activity() {
     private fun showSection(section: String) {
         val root = baseLayout(section)
 
-        root.addView(
-            makeButton("← На главную") {
-                showHome()
-            }
-        )
+        root.addView(makeButton("← На главную") { showHome() })
 
         val input = EditText(this)
         input.hint = "Новая запись"
         input.setSingleLine(true)
         input.setPadding(16, 12, 16, 12)
-
         root.addView(input)
 
-        root.addView(
-            makeButton("＋ Добавить") {
-                val value = input.text.toString().trim()
-
-                if (value.isNotEmpty()) {
-                    val list = loadItems(section).toMutableList()
-                    list.add(value)
-                    saveItems(section, list)
-                    showSection(section)
-                }
+        root.addView(makeButton("＋ Добавить") {
+            val value = input.text.toString().trim()
+            if (value.isNotEmpty()) {
+                val list = loadItems(section).toMutableList()
+                list.add(value)
+                saveItems(section, list)
+                showSection(section)
             }
-        )
+        })
 
         val scroll = ScrollView(this)
         val listLayout = LinearLayout(this)
@@ -180,10 +206,7 @@ class MainActivity : Activity() {
             text.setTextColor(Color.DKGRAY)
             text.setPadding(12, 14, 8, 14)
 
-            row.addView(
-                text,
-                LinearLayout.LayoutParams(0, -2, 1f)
-            )
+            row.addView(text, LinearLayout.LayoutParams(0, -2, 1f))
 
             val delete = Button(this)
             delete.text = "×"
@@ -199,18 +222,11 @@ class MainActivity : Activity() {
 
             val divider = android.view.View(this)
             divider.setBackgroundColor(Color.LTGRAY)
-            listLayout.addView(
-                divider,
-                LinearLayout.LayoutParams(-1, 1)
-            )
+            listLayout.addView(divider, LinearLayout.LayoutParams(-1, 1))
         }
 
         scroll.addView(listLayout)
-
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         setContentView(root)
     }
@@ -218,13 +234,10 @@ class MainActivity : Activity() {
     private fun loadItems(section: String): List<String> {
         val saved = prefs.getString(section, "") ?: ""
         if (saved.isEmpty()) return emptyList()
-
         return saved.split("\n")
     }
 
     private fun saveItems(section: String, items: List<String>) {
-        prefs.edit()
-            .putString(section, items.joinToString("\n"))
-            .apply()
+        prefs.edit().putString(section, items.joinToString("\n")).apply()
     }
 }
