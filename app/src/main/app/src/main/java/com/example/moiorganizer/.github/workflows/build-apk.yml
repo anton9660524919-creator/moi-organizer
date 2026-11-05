@@ -1,3 +1,4 @@
+
 name: Build Moi Organizer APK
 
 on:
@@ -25,8 +26,8 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build APK
-        run: gradle assembleDebug
+      - name: Build APK with detailed error
+        run: gradle assembleDebug --stacktrace --info
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -35,3 +36,4 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+          
