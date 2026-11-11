@@ -11,6 +11,15 @@ import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.widget.*
+import android.text.InputType
+import org.json.JSONArray
+import org.json.JSONObject
+
+data class ShoppingItem(
+    val name: String,
+    val quantity: String,
+    val bought: Boolean
+)
 
 class MainActivity : Activity() {
 
@@ -49,6 +58,12 @@ class MainActivity : Activity() {
         "🛒", "👛", "📅", "🔔",
         "📦", "📄", "🏠", "📝"
     )
+
+    private val shoppingItems = mutableListOf<ShoppingItem>()
+    private var shoppingFilter = "Купить"
+    private lateinit var shoppingList: LinearLayout
+    private lateinit var shoppingNameInput: EditText
+    private lateinit var shoppingQtyInput: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -124,8 +139,10 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val brand = text("▦  Мой органайзер", 21f, dark, true)
-        top.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(
+            text("▦  Мой органайзер", 21f, dark, true),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
 
         val badge = text("Главная", 14f, green, true).apply {
             background = rounded(Color.rgb(225, 242, 232), 30)
@@ -175,9 +192,7 @@ class MainActivity : Activity() {
                 title.setPadding(0, dp(9), 0, dp(6))
                 card.addView(title)
 
-                card.addView(
-                    text(descriptions[index], 15f, gray)
-                )
+                card.addView(text(descriptions[index], 15f, gray))
 
                 val params = LinearLayout.LayoutParams(0, dp(145), 1f)
                 params.setMargins(
@@ -250,6 +265,11 @@ class MainActivity : Activity() {
     }
 
     private fun showSection(section: String) {
+        if (section == "🛒 Покупки") {
+            showShopping()
+            return
+        }
+
         currentScreen = "section"
 
         val root = page()
@@ -343,56 +363,308 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
-    private fun showAddDialog() {
-        val names = sections.map {
-            it.substringAfter(" ")
-        }.toTypedArray()
+    // Покупки
 
-        AlertDialog.Builder(this)
-            .setTitle("Куда добавить запись?")
-            .setItems(names) { _, which ->
-                showSection(sections[which])
+    private fun loadShopping() {
+        shoppingItems.clear()
+
+        val data = prefs.getString("shopping_items_v1", null)
+
+        if (data != null) {
+            try {
+                val array = JSONArray(data)
+
+                for (i in 0 until array.length()) {
+                    val obj = array.getJSONObject(i)
+                    shoppingItems.add(
+                        ShoppingItem(
+                            obj.optString("name"),
+                            obj.optString("quantity", "1"),
+                            obj.optBoolean("bought", false)
+                        )
+                    )
+                }
+            } catch (_: Exception) {
+                shoppingItems.clear()
             }
-            .setNegativeButton("Отмена", null)
-            .show()
+        } else {
+            // Перенос простых записей из прежнего раздела органайзера.
+            val oldItems = loadItems("🛒 Покупки")
+            oldItems.forEach {
+                shoppingItems.add(ShoppingItem(it, "1", false))
+            }
+            saveShopping()
+        }
     }
 
-    private fun showSettings() {
-        currentScreen = "settings"
+    private fun saveShopping() {
+        val array = JSONArray()
+
+        shoppingItems.forEach {
+            val obj = JSONObject()
+            obj.put("name", it.name)
+            obj.put("quantity", it.quantity)
+            obj.put("bought", it.bought)
+            array.put(obj)
+        }
+
+        prefs.edit()
+            .putString("shopping_items_v1", array.toString())
+            .apply()
+    }
+
+    private fun showShopping() {
+        currentScreen = "shopping"
+        loadShopping()
 
         val root = page()
 
-        val header = text("Настройки", 25f, dark, true)
-        header.setPadding(dp(20), dp(22), dp(16), dp(18))
-        root.addView(header)
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
 
-        val info = text(
-            "Мой органайзер\n\nВсе данные хранятся на этом телефоне.\nПриложение работает без интернета.",
-            16f,
-            gray
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        header.addView(
+            text("Мои покупки", 25f, dark, true),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+        header.addView(text("🛒", 25f, dark))
+        content.addView(header)
+
+        content.addView(text("Ваш список покупок", 13f, gray).apply {
+            setPadding(0, dp(4), 0, dp(16))
+        })
+
+        val inputCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            background = rounded(Color.WHITE, 16)
+        }
+
+        shoppingNameInput = shoppingField("Название товара")
+        inputCard.addView(
+            shoppingNameInput,
+            LinearLayout.LayoutParams(-1, dp(52))
         )
 
-        info.setPadding(dp(20), dp(20), dp(20), dp(20))
-        root.addView(info)
+        val inputRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(8), 0, dp(8))
+        }
 
-        root.addView(
-            View(this),
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
+        shoppingQtyInput = shoppingField("Количество").apply {
+            setText("1")
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
 
+        val qtyParams = LinearLayout.LayoutParams(0, dp(56), 1f)
+        qtyParams.marginEnd = dp(8)
+        inputRow.addView(shoppingQtyInput, qtyParams)
+
+        val addButton = TextView(this).apply {
+            text = "＋ Добавить"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(Color.WHITE)
+            background = rounded(dark, 12)
+            setPadding(dp(14), dp(6), dp(14), dp(6))
+            setOnClickListener { addShoppingItem() }
+        }
+
+        inputRow.addView(addButton, LinearLayout.LayoutParams(-2, dp(56)))
+        inputCard.addView(inputRow)
+
+        val cardParams = LinearLayout.LayoutParams(-1, -2)
+        cardParams.bottomMargin = dp(14)
+        content.addView(inputCard, cardParams)
+
+        val filters = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+        }
+
+        listOf("Купить", "Все", "Куплено").forEach { filter ->
+            val button = TextView(this).apply {
+                text = filter
+                textSize = 14f
+                gravity = Gravity.CENTER
+                setTypeface(null, Typeface.BOLD)
+                val selected = shoppingFilter == filter
+                setTextColor(if (selected) Color.WHITE else dark)
+                background = rounded(if (selected) dark else Color.WHITE, 12)
+                setPadding(dp(5), dp(13), dp(5), dp(13))
+                setOnClickListener {
+                    shoppingFilter = filter
+                    drawShoppingItems()
+                    showShopping()
+                }
+            }
+
+            val lp = LinearLayout.LayoutParams(0, dp(46), 1f)
+            lp.marginEnd = dp(5)
+            filters.addView(button, lp)
+        }
+
+        content.addView(filters)
+
+        content.addView(text("Список товаров", 18f, dark, true).apply {
+            setPadding(0, dp(18), 0, dp(10))
+        })
+
+        val scroll = ScrollView(this)
+        shoppingList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        scroll.addView(shoppingList)
+        content.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        val clearButton = TextView(this).apply {
+            text = "Удалить купленные"
+            textSize = 13f
+            gravity = Gravity.CENTER
+            setTextColor(gray)
+            setPadding(dp(8), dp(14), dp(8), dp(8))
+            setOnClickListener {
+                shoppingItems.removeAll { it.bought }
+                saveShopping()
+                drawShoppingItems()
+            }
+        }
+
+        content.addView(clearButton)
+
+        root.addView(content, LinearLayout.LayoutParams(-1, 0, 1f))
         addBottomMenu(root)
         setContentView(root)
+
+        drawShoppingItems()
     }
 
-    private fun loadItems(section: String): List<String> {
-        val saved = prefs.getString(section, "") ?: ""
-        if (saved.isEmpty()) return emptyList()
-        return saved.split("\n")
+    private fun shoppingField(hintText: String): EditText {
+        return EditText(this).apply {
+            hint = hintText
+            textSize = 15f
+            setSingleLine(true)
+            setPadding(dp(14), dp(6), dp(14), dp(6))
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(Color.rgb(243, 244, 246), 12)
+            setTextColor(dark)
+        }
     }
 
-    private fun saveItems(section: String, items: List<String>) {
-        prefs.edit()
-            .putString(section, items.joinToString("\n"))
-            .apply()
+    private fun addShoppingItem() {
+        val name = shoppingNameInput.text.toString().trim()
+
+        if (name.isEmpty()) {
+            shoppingNameInput.error = "Введите название"
+            return
+        }
+
+        val quantity = shoppingQtyInput.text.toString().trim().ifEmpty { "1" }
+
+        shoppingItems.add(ShoppingItem(name, quantity, false))
+        shoppingFilter = "Купить"
+        saveShopping()
+        showShopping()
     }
-}
+
+    private fun drawShoppingItems() {
+        shoppingList.removeAllViews()
+
+        val shown = shoppingItems.withIndex().filter {
+            shoppingFilter == "Все" ||
+            (shoppingFilter == "Куплено" && it.value.bought) ||
+            (shoppingFilter == "Купить" && !it.value.bought)
+        }
+
+        if (shown.isEmpty()) {
+            shoppingList.addView(
+                text("Список пока пуст", 15f, gray).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(28), 0, dp(20))
+                }
+            )
+        }
+
+        shown.forEach { indexed ->
+            val index = indexed.index
+            val item = indexed.value
+
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(8), dp(8), dp(6), dp(8))
+                background = rounded(Color.WHITE, 14)
+            }
+
+            val check = CheckBox(this).apply {
+                isChecked = item.bought
+                buttonTintList = android.content.res.ColorStateList.valueOf(
+                    if (item.bought) Color.rgb(65, 155, 100) else dark
+                )
+
+                setOnCheckedChangeListener { _, checked ->
+                    shoppingItems[index] = item.copy(bought = checked)
+                    saveShopping()
+                    drawShoppingItems()
+                }
+            }
+
+            row.addView(check)
+
+            val info = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+
+            val label = text(item.name, 16f, dark, true)
+            if (item.bought) label.setTextColor(gray)
+            info.addView(label)
+
+            info.addView(text(item.quantity, 12f, gray))
+            row.addView(info, LinearLayout.LayoutParams(0, -2, 1f))
+
+            row.addView(shoppingAction("✎") {
+                editShoppingItem(index)
+            })
+
+            row.addView(shoppingAction("×") {
+                shoppingItems.removeAt(index)
+                saveShopping()
+                drawShoppingItems()
+            })
+
+            val lp = LinearLayout.LayoutParams(-1, -2)
+            lp.bottomMargin = dp(7)
+            shoppingList.addView(row, lp)
+        }
+    }
+
+    private fun shoppingAction(symbol: String, action: () -> Unit): TextView {
+        return TextView(this).apply {
+            text = symbol
+            textSize = 22f
+            gravity = Gravity.CENTER
+            setTextColor(gray)
+            setPadding(dp(9), dp(4), dp(9), dp(4))
+            setOnClickListener { action() }
+        }
+    }
+
+    private fun editShoppingItem(index: Int) {
+        val item = shoppingItems[index]
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), 0, dp(20), 0)
+        }
+
+        val name = EditText(this).apply {
+           
