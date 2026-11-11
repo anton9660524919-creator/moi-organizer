@@ -10,12 +10,12 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
-import android.view.WindowManager
 import android.widget.*
 
 class MainActivity : Activity() {
 
     private lateinit var prefs: android.content.SharedPreferences
+    private var currentScreen = "home"
 
     private val bg = Color.rgb(250, 250, 250)
     private val cardColor = Color.rgb(242, 242, 242)
@@ -67,6 +67,14 @@ class MainActivity : Activity() {
         showHome()
     }
 
+    override fun onBackPressed() {
+        if (currentScreen != "home") {
+            showHome()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
     }
@@ -101,9 +109,11 @@ class MainActivity : Activity() {
     }
 
     private fun showHome() {
-        val root = page()
+        currentScreen = "home"
 
+        val root = page()
         val scroll = ScrollView(this)
+
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(12))
@@ -121,6 +131,7 @@ class MainActivity : Activity() {
             background = rounded(Color.rgb(225, 242, 232), 30)
             setPadding(dp(13), dp(8), dp(13), dp(8))
         }
+
         top.addView(badge)
         content.addView(top)
 
@@ -153,8 +164,7 @@ class MainActivity : Activity() {
                     }
                 }
 
-                val icon = text(symbols[index], 29f, dark)
-                card.addView(icon)
+                card.addView(text(symbols[index], 29f, dark))
 
                 val title = text(
                     sections[index].substringAfter(" "),
@@ -165,19 +175,11 @@ class MainActivity : Activity() {
                 title.setPadding(0, dp(9), 0, dp(6))
                 card.addView(title)
 
-                val description = text(
-                    descriptions[index],
-                    15f,
-                    gray
-                )
-                card.addView(description)
-
-                val params = LinearLayout.LayoutParams(
-                    0,
-                    dp(145),
-                    1f
+                card.addView(
+                    text(descriptions[index], 15f, gray)
                 )
 
+                val params = LinearLayout.LayoutParams(0, dp(145), 1f)
                 params.setMargins(
                     if (j == 0) 0 else dp(7),
                     dp(6),
@@ -192,11 +194,7 @@ class MainActivity : Activity() {
         }
 
         scroll.addView(content)
-
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         addBottomMenu(root)
         setContentView(root)
@@ -207,10 +205,7 @@ class MainActivity : Activity() {
             setBackgroundColor(Color.rgb(230, 230, 230))
         }
 
-        root.addView(
-            line,
-            LinearLayout.LayoutParams(-1, dp(1))
-        )
+        root.addView(line, LinearLayout.LayoutParams(-1, dp(1)))
 
         val menu = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -248,16 +243,15 @@ class MainActivity : Activity() {
                 }
             }
 
-            menu.addView(
-                button,
-                LinearLayout.LayoutParams(0, dp(52), 1f)
-            )
+            menu.addView(button, LinearLayout.LayoutParams(0, dp(52), 1f))
         }
 
         root.addView(menu)
     }
 
     private fun showSection(section: String) {
+        currentScreen = "section"
+
         val root = page()
 
         val header = text(section, 25f, dark, true)
@@ -319,10 +313,7 @@ class MainActivity : Activity() {
             val itemText = text(value, 16f, dark)
             itemText.setPadding(dp(12), dp(14), dp(8), dp(14))
 
-            row.addView(
-                itemText,
-                LinearLayout.LayoutParams(0, -2, 1f)
-            )
+            row.addView(itemText, LinearLayout.LayoutParams(0, -2, 1f))
 
             val delete = Button(this).apply {
                 text = "×"
@@ -342,18 +333,11 @@ class MainActivity : Activity() {
                 setBackgroundColor(Color.LTGRAY)
             }
 
-            listLayout.addView(
-                divider,
-                LinearLayout.LayoutParams(-1, dp(1))
-            )
+            listLayout.addView(divider, LinearLayout.LayoutParams(-1, dp(1)))
         }
 
         scroll.addView(listLayout)
-
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
         addBottomMenu(root)
         setContentView(root)
@@ -374,6 +358,8 @@ class MainActivity : Activity() {
     }
 
     private fun showSettings() {
+        currentScreen = "settings"
+
         val root = page()
 
         val header = text("Настройки", 25f, dark, true)
@@ -400,9 +386,7 @@ class MainActivity : Activity() {
 
     private fun loadItems(section: String): List<String> {
         val saved = prefs.getString(section, "") ?: ""
-
         if (saved.isEmpty()) return emptyList()
-
         return saved.split("\n")
     }
 
