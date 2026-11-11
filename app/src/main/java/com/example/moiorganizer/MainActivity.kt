@@ -666,5 +666,89 @@ class MainActivity : Activity() {
             setPadding(dp(20), 0, dp(20), 0)
         }
 
+        
         val name = EditText(this).apply {
-           
+            setText(item.name)
+            hint = "Название товара"
+            setSingleLine(true)
+        }
+
+        val quantity = EditText(this).apply {
+            setText(item.quantity)
+            hint = "Количество"
+            setSingleLine(true)
+        }
+
+        layout.addView(name)
+        layout.addView(quantity)
+
+        AlertDialog.Builder(this)
+            .setTitle("Изменить товар")
+            .setView(layout)
+            .setNegativeButton("Отмена", null)
+            .setPositiveButton("Сохранить") { _, _ ->
+                val newName = name.text.toString().trim()
+                val newQuantity = quantity.text.toString().trim()
+
+                if (newName.isNotEmpty()) {
+                    shoppingItems[index] = item.copy(
+                        name = newName,
+                        quantity = newQuantity.ifEmpty { "1" }
+                    )
+                    saveShopping()
+                    drawShoppingItems()
+                }
+            }
+            .show()
+    }
+
+    // Добавление записи в другие разделы
+
+    private fun showAddDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Добавить запись")
+            .setItems(sections.toTypedArray()) { _, which ->
+                showSection(sections[which])
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    private fun showSettings() {
+        AlertDialog.Builder(this)
+            .setTitle("Настройки")
+            .setMessage("Мой органайзер\n\nДанные хранятся на этом устройстве.")
+            .setPositiveButton("Закрыть", null)
+            .show()
+    }
+
+    // Хранение записей остальных разделов
+
+    private fun loadItems(section: String): List<String> {
+        val data = prefs.getString("section_$section", null)
+            ?: return emptyList()
+
+        return try {
+            val array = JSONArray(data)
+            val result = mutableListOf<String>()
+
+            for (i in 0 until array.length()) {
+                result.add(array.getString(i))
+            }
+
+            result
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun saveItems(section: String, items: List<String>) {
+        val array = JSONArray()
+
+        items.forEach { array.put(it) }
+
+        prefs.edit()
+            .putString("section_$section", array.toString())
+            .apply()
+    }
+}
