@@ -2,6 +2,7 @@
 package com.example.moiorganizer
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.os.Bundle
 import android.content.Context
 import android.graphics.Color
@@ -107,6 +108,7 @@ class MainActivity : Activity() {
             background = rounded(Color.rgb(225, 242, 232), 30)
             setPadding(dp(12), dp(7), dp(12), dp(7))
         }
+
         top.addView(badge)
         content.addView(top)
 
@@ -125,6 +127,7 @@ class MainActivity : Activity() {
 
             for (j in 0..1) {
                 val index = i * 2 + j
+
                 val card = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER_VERTICAL
@@ -160,12 +163,14 @@ class MainActivity : Activity() {
                     dp(130),
                     1f
                 )
+
                 params.setMargins(
                     if (j == 0) 0 else dp(7),
                     dp(5),
                     if (j == 0) dp(7) else 0,
                     dp(5)
                 )
+
                 row.addView(card, params)
             }
 
@@ -173,7 +178,11 @@ class MainActivity : Activity() {
         }
 
         scroll.addView(content)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        root.addView(
+            scroll,
+            LinearLayout.LayoutParams(-1, 0, 1f)
+        )
 
         addBottomMenu(root)
         setContentView(root)
@@ -183,6 +192,7 @@ class MainActivity : Activity() {
         val line = View(this).apply {
             setBackgroundColor(Color.rgb(230, 230, 230))
         }
+
         root.addView(
             line,
             LinearLayout.LayoutParams(-1, dp(1))
@@ -211,6 +221,7 @@ class MainActivity : Activity() {
                 setTextColor(dark)
                 isClickable = true
                 setPadding(0, dp(5), 0, dp(5))
+
                 setOnClickListener {
                     when (index) {
                         0 -> showHome()
@@ -254,8 +265,10 @@ class MainActivity : Activity() {
         val add = Button(this).apply {
             text = "＋ Добавить"
             isAllCaps = false
+
             setOnClickListener {
                 val value = input.text.toString().trim()
+
                 if (value.isNotEmpty()) {
                     val list = loadItems(section).toMutableList()
                     list.add(value)
@@ -264,9 +277,11 @@ class MainActivity : Activity() {
                 }
             }
         }
+
         root.addView(add)
 
         val scroll = ScrollView(this)
+
         val listLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -289,6 +304,7 @@ class MainActivity : Activity() {
 
             val itemText = text(value, 16f, dark)
             itemText.setPadding(dp(12), dp(14), dp(8), dp(14))
+
             row.addView(
                 itemText,
                 LinearLayout.LayoutParams(0, -2, 1f)
@@ -296,6 +312,7 @@ class MainActivity : Activity() {
 
             val delete = Button(this).apply {
                 text = "×"
+
                 setOnClickListener {
                     val updated = loadItems(section).toMutableList()
                     updated.removeAt(index)
@@ -303,12 +320,14 @@ class MainActivity : Activity() {
                     showSection(section)
                 }
             }
+
             row.addView(delete)
             listLayout.addView(row)
 
             val divider = View(this).apply {
                 setBackgroundColor(Color.LTGRAY)
             }
+
             listLayout.addView(
                 divider,
                 LinearLayout.LayoutParams(-1, dp(1))
@@ -316,7 +335,11 @@ class MainActivity : Activity() {
         }
 
         scroll.addView(listLayout)
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        root.addView(
+            scroll,
+            LinearLayout.LayoutParams(-1, 0, 1f)
+        )
 
         addBottomMenu(root)
         setContentView(root)
@@ -329,7 +352,7 @@ class MainActivity : Activity() {
 
         AlertDialog.Builder(this)
             .setTitle("Куда добавить запись?")
-            .setItems(names) { _, which ->
+            .setItems(names) { dialog, which ->
                 showSection(sections[which])
             }
             .setNegativeButton("Отмена", null)
@@ -344,10 +367,13 @@ class MainActivity : Activity() {
         root.addView(header)
 
         val info = text(
-            "Мой органайзер\n\nВсе данные хранятся на этом телефоне.\nПриложение работает без интернета.",
+            "Мой органайзер\n\n" +
+                "Все данные хранятся на этом телефоне.\n" +
+                "Приложение работает без интернета.",
             16f,
             gray
         )
+
         info.setPadding(dp(20), dp(20), dp(20), dp(20))
         root.addView(info)
 
@@ -362,7 +388,11 @@ class MainActivity : Activity() {
 
     private fun loadItems(section: String): List<String> {
         val saved = prefs.getString(section, "") ?: ""
-        if (saved.isEmpty()) return emptyList()
+
+        if (saved.isEmpty()) {
+            return emptyList()
+        }
+
         return saved.split("\n")
     }
 
