@@ -108,7 +108,6 @@ class MainActivity : Activity() {
             background = rounded(Color.rgb(225, 242, 232), 30)
             setPadding(dp(12), dp(7), dp(12), dp(7))
         }
-
         top.addView(badge)
         content.addView(top)
 
@@ -178,7 +177,6 @@ class MainActivity : Activity() {
         }
 
         scroll.addView(content)
-
         root.addView(
             scroll,
             LinearLayout.LayoutParams(-1, 0, 1f)
@@ -281,7 +279,6 @@ class MainActivity : Activity() {
         root.addView(add)
 
         val scroll = ScrollView(this)
-
         val listLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12), dp(8), dp(12), dp(8))
@@ -352,7 +349,7 @@ class MainActivity : Activity() {
 
         AlertDialog.Builder(this)
             .setTitle("Куда добавить запись?")
-            .setItems(names) { dialog, which ->
+            .setItems(names) { _, which ->
                 showSection(sections[which])
             }
             .setNegativeButton("Отмена", null)
@@ -367,9 +364,7 @@ class MainActivity : Activity() {
         root.addView(header)
 
         val info = text(
-            "Мой органайзер\n\n" +
-                "Все данные хранятся на этом телефоне.\n" +
-                "Приложение работает без интернета.",
+            "Мой органайзер\n\nВсе данные хранятся на этом телефоне.\nПриложение работает без интернета.",
             16f,
             gray
         )
@@ -389,9 +384,7 @@ class MainActivity : Activity() {
     private fun loadItems(section: String): List<String> {
         val saved = prefs.getString(section, "") ?: ""
 
-        if (saved.isEmpty()) {
-            return emptyList()
-        }
+        if (saved.isEmpty()) return emptyList()
 
         return saved.split("\n")
     }
