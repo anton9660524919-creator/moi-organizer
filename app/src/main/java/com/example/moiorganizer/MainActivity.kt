@@ -10,6 +10,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.*
 
 class MainActivity : Activity() {
@@ -45,13 +46,24 @@ class MainActivity : Activity() {
     )
 
     private val symbols = listOf(
-        "🛒", "▣", "▦", "♧",
-        "⬡", "▤", "⌂", "▤"
+        "🛒", "👛", "📅", "🔔",
+        "📦", "📄", "🏠", "📝"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefs = getSharedPreferences("organizer_data", Context.MODE_PRIVATE)
+
+        prefs = getSharedPreferences(
+            "organizer_data",
+            Context.MODE_PRIVATE
+        )
+
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+        window.decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
+            View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+
         showHome()
     }
 
@@ -84,6 +96,7 @@ class MainActivity : Activity() {
         return LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
+            fitsSystemWindows = true
         }
     }
 
@@ -93,7 +106,7 @@ class MainActivity : Activity() {
         val scroll = ScrollView(this)
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(18), dp(18), dp(18), dp(12))
+            setPadding(dp(20), dp(18), dp(20), dp(12))
         }
 
         val top = LinearLayout(this).apply {
@@ -101,22 +114,22 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER_VERTICAL
         }
 
-        val brand = text("▦  Мой органайзер", 19f, dark, true)
+        val brand = text("▦  Мой органайзер", 21f, dark, true)
         top.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
 
-        val badge = text("Главная", 13f, green, true).apply {
+        val badge = text("Главная", 14f, green, true).apply {
             background = rounded(Color.rgb(225, 242, 232), 30)
-            setPadding(dp(12), dp(7), dp(12), dp(7))
+            setPadding(dp(13), dp(8), dp(13), dp(8))
         }
         top.addView(badge)
         content.addView(top)
 
-        val greeting = text("Добрый день!", 31f, dark, true)
-        greeting.setPadding(0, dp(22), 0, dp(4))
+        val greeting = text("Добрый день!", 32f, dark, true)
+        greeting.setPadding(0, dp(35), 0, dp(5))
         content.addView(greeting)
 
-        val subtitle = text("Всё важное — в одном месте", 16f, gray)
-        subtitle.setPadding(0, 0, 0, dp(20))
+        val subtitle = text("Всё важное — в одном месте", 17f, gray)
+        subtitle.setPadding(0, 0, 0, dp(22))
         content.addView(subtitle)
 
         for (i in 0 until 4) {
@@ -130,44 +143,46 @@ class MainActivity : Activity() {
                 val card = LinearLayout(this).apply {
                     orientation = LinearLayout.VERTICAL
                     gravity = Gravity.CENTER_VERTICAL
-                    background = rounded(cardColor, 20)
-                    setPadding(dp(17), dp(14), dp(12), dp(12))
+                    background = rounded(cardColor, 22)
+                    setPadding(dp(18), dp(15), dp(12), dp(13))
                     isClickable = true
+                    isFocusable = true
+
                     setOnClickListener {
                         showSection(sections[index])
                     }
                 }
 
-                val icon = text(symbols[index], 27f, dark)
+                val icon = text(symbols[index], 29f, dark)
                 card.addView(icon)
 
                 val title = text(
                     sections[index].substringAfter(" "),
-                    18f,
+                    19f,
                     dark,
                     true
                 )
-                title.setPadding(0, dp(8), 0, dp(6))
+                title.setPadding(0, dp(9), 0, dp(6))
                 card.addView(title)
 
                 val description = text(
                     descriptions[index],
-                    14f,
+                    15f,
                     gray
                 )
                 card.addView(description)
 
                 val params = LinearLayout.LayoutParams(
                     0,
-                    dp(130),
+                    dp(145),
                     1f
                 )
 
                 params.setMargins(
                     if (j == 0) 0 else dp(7),
-                    dp(5),
+                    dp(6),
                     if (j == 0) dp(7) else 0,
-                    dp(5)
+                    dp(6)
                 )
 
                 row.addView(card, params)
@@ -177,6 +192,7 @@ class MainActivity : Activity() {
         }
 
         scroll.addView(content)
+
         root.addView(
             scroll,
             LinearLayout.LayoutParams(-1, 0, 1f)
@@ -200,24 +216,25 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             setBackgroundColor(bg)
-            setPadding(dp(5), dp(9), dp(5), dp(9))
+            setPadding(dp(5), dp(7), dp(5), dp(7))
         }
 
         val actions = listOf(
-            Pair("⌂", "Главная"),
-            Pair("▦", "Календарь"),
-            Pair("⊕", "Добавить"),
-            Pair("♧", "Напоминания"),
-            Pair("⚙", "Настройки")
+            Pair("🏠", "Главная"),
+            Pair("📅", "Календарь"),
+            Pair("＋", "Добавить"),
+            Pair("🔔", "Напоминания"),
+            Pair("⚙️", "Настройки")
         )
 
         actions.forEachIndexed { index, item ->
             val button = TextView(this).apply {
                 text = item.first
-                textSize = if (index == 2) 30f else 27f
+                textSize = if (index == 2) 30f else 24f
                 gravity = Gravity.CENTER
                 setTextColor(dark)
                 isClickable = true
+                isFocusable = true
                 setPadding(0, dp(5), 0, dp(5))
 
                 setOnClickListener {
@@ -233,7 +250,7 @@ class MainActivity : Activity() {
 
             menu.addView(
                 button,
-                LinearLayout.LayoutParams(0, dp(54), 1f)
+                LinearLayout.LayoutParams(0, dp(52), 1f)
             )
         }
 
