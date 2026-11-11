@@ -3,96 +3,23 @@ package com.example.moiorganizer
 
 import android.app.Activity
 import android.os.Bundle
+import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
-import android.view.ViewGroup
+import android.view.View
 import android.widget.*
-import android.content.Context
 
 class MainActivity : Activity() {
 
     private lateinit var prefs: android.content.SharedPreferences
 
-    private val background = Color.rgb(246, 247, 249)
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        try {
-            prefs = getSharedPreferences("organizer_data", Context.MODE_PRIVATE)
-
-            val previousError = prefs.getString("last_error", null)
-            if (previousError != null) {
-                showError("Предыдущая ошибка запуска:\n\n$previousError")
-                prefs.edit().remove("last_error").apply()
-                return
-            }
-
-            showHome()
-
-        } catch (e: Throwable) {
-            showError(e.stackTraceToString())
-        }
-    }
-
-    private fun showError(message: String) {
-        val root = LinearLayout(this)
-        root.orientation = LinearLayout.VERTICAL
-        root.setPadding(20, 30, 20, 20)
-        root.setBackgroundColor(Color.WHITE)
-
-        val title = TextView(this)
-        title.text = "Ошибка запуска"
-        title.textSize = 24f
-        title.setTypeface(null, Typeface.BOLD)
-        title.setTextColor(Color.RED)
-        root.addView(title)
-
-        val details = TextView(this)
-        details.text = message
-        details.textSize = 13f
-        details.setTextColor(Color.BLACK)
-        details.setTextIsSelectable(true)
-
-        val scroll = ScrollView(this)
-        scroll.addView(details)
-
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
-
-        setContentView(root)
-
-        try {
-            prefs.edit().putString("last_error", message).apply()
-        } catch (_: Throwable) {
-        }
-    }
-
-    private fun baseLayout(title: String): LinearLayout {
-        val root = LinearLayout(this)
-        root.orientation = LinearLayout.VERTICAL
-        root.setBackgroundColor(background)
-
-        val header = TextView(this)
-        header.text = title
-        header.textSize = 25f
-        header.setTextColor(Color.rgb(32, 37, 43))
-        header.setTypeface(null, Typeface.BOLD)
-        header.setPadding(20, 22, 16, 18)
-
-        root.addView(header)
-        return root
-    }
-
-    private fun makeButton(text: String, action: () -> Unit): Button {
-        val button = Button(this)
-        button.text = text
-        button.setOnClickListener { action() }
-        return button
-    }
+    private val bg = Color.rgb(250, 250, 250)
+    private val cardColor = Color.rgb(242, 242, 242)
+    private val dark = Color.rgb(22, 24, 27)
+    private val gray = Color.rgb(105, 105, 105)
+    private val green = Color.rgb(65, 150, 105)
 
     private val sections = listOf(
         "🛒 Покупки",
@@ -105,129 +32,331 @@ class MainActivity : Activity() {
         "📝 Заметки"
     )
 
-    private fun showHome() {
-        val root = baseLayout("Мой органайзер")
+    private val descriptions = listOf(
+        "Списки покупок",
+        "Доходы и расходы",
+        "События и планы",
+        "Важные даты",
+        "Вещи и техника",
+        "Чеки и гарантии",
+        "Ремонт и обслуживание",
+        "Идеи и записи"
+    )
 
-        val subtitle = TextView(this)
-        subtitle.text = "Всё важное — в одном месте"
-        subtitle.textSize = 15f
-        subtitle.setTextColor(Color.GRAY)
-        subtitle.setPadding(20, 0, 20, 16)
-        root.addView(subtitle)
+    private val symbols = listOf(
+        "🛒", "▣", "▦", "♧",
+        "⬡", "▤", "⌂", "▤"
+    )
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefs = getSharedPreferences("organizer_data", Context.MODE_PRIVATE)
+        showHome()
+    }
+
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
+
+    private fun rounded(color: Int, radius: Int): GradientDrawable {
+        return GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(radius).toFloat()
+        }
+    }
+
+    private fun text(
+        value: String,
+        size: Float,
+        color: Int,
+        bold: Boolean = false
+    ): TextView {
+        return TextView(this).apply {
+            text = value
+            textSize = size
+            setTextColor(color)
+            if (bold) setTypeface(null, Typeface.BOLD)
+        }
+    }
+
+    private fun page(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(bg)
+        }
+    }
+
+    private fun showHome() {
+        val root = page()
 
         val scroll = ScrollView(this)
-        val grid = LinearLayout(this)
-        grid.orientation = LinearLayout.VERTICAL
-        grid.setPadding(12, 8, 12, 12)
-
-        for (i in sections.indices step 2) {
-            val row = LinearLayout(this)
-            row.orientation = LinearLayout.HORIZONTAL
-
-            for (j in i until minOf(i + 2, sections.size)) {
-                val button = Button(this)
-                button.text = sections[j]
-                button.textSize = 15f
-                button.isAllCaps = false
-                button.setBackgroundColor(Color.WHITE)
-
-                val params = LinearLayout.LayoutParams(0, 115, 1f)
-                params.setMargins(5, 5, 5, 5)
-                row.addView(button, params)
-
-                val section = sections[j]
-                button.setOnClickListener { showSection(section) }
-            }
-
-            grid.addView(row)
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(18), dp(18), dp(18), dp(12))
         }
 
-        scroll.addView(grid)
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(-1, 0, 1f)
-        )
+        val top = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
 
-        val footer = TextView(this)
-        footer.text = "Данные хранятся на этом телефоне"
-        footer.gravity = Gravity.CENTER
-        footer.setTextColor(Color.GRAY)
-        footer.setPadding(8, 12, 8, 16)
-        root.addView(footer)
+        val brand = text("▦  Мой органайзер", 19f, dark, true)
+        top.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
 
+        val badge = text("Главная", 13f, green, true).apply {
+            background = rounded(Color.rgb(225, 242, 232), 30)
+            setPadding(dp(12), dp(7), dp(12), dp(7))
+        }
+        top.addView(badge)
+        content.addView(top)
+
+        val greeting = text("Добрый день!", 31f, dark, true)
+        greeting.setPadding(0, dp(22), 0, dp(4))
+        content.addView(greeting)
+
+        val subtitle = text("Всё важное — в одном месте", 16f, gray)
+        subtitle.setPadding(0, 0, 0, dp(20))
+        content.addView(subtitle)
+
+        for (i in 0 until 4) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+            }
+
+            for (j in 0..1) {
+                val index = i * 2 + j
+                val card = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    background = rounded(cardColor, 20)
+                    setPadding(dp(17), dp(14), dp(12), dp(12))
+                    isClickable = true
+                    setOnClickListener {
+                        showSection(sections[index])
+                    }
+                }
+
+                val icon = text(symbols[index], 27f, dark)
+                card.addView(icon)
+
+                val title = text(
+                    sections[index].substringAfter(" "),
+                    18f,
+                    dark,
+                    true
+                )
+                title.setPadding(0, dp(8), 0, dp(6))
+                card.addView(title)
+
+                val description = text(
+                    descriptions[index],
+                    14f,
+                    gray
+                )
+                card.addView(description)
+
+                val params = LinearLayout.LayoutParams(
+                    0,
+                    dp(130),
+                    1f
+                )
+                params.setMargins(
+                    if (j == 0) 0 else dp(7),
+                    dp(5),
+                    if (j == 0) dp(7) else 0,
+                    dp(5)
+                )
+                row.addView(card, params)
+            }
+
+            content.addView(row)
+        }
+
+        scroll.addView(content)
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        addBottomMenu(root)
         setContentView(root)
     }
 
-    private fun showSection(section: String) {
-        val root = baseLayout(section)
+    private fun addBottomMenu(root: LinearLayout) {
+        val line = View(this).apply {
+            setBackgroundColor(Color.rgb(230, 230, 230))
+        }
+        root.addView(
+            line,
+            LinearLayout.LayoutParams(-1, dp(1))
+        )
 
-        root.addView(makeButton("← На главную") { showHome() })
+        val menu = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(bg)
+            setPadding(dp(5), dp(9), dp(5), dp(9))
+        }
 
-        val input = EditText(this)
-        input.hint = "Новая запись"
-        input.setSingleLine(true)
-        input.setPadding(16, 12, 16, 12)
-        root.addView(input)
+        val actions = listOf(
+            Pair("⌂", "Главная"),
+            Pair("▦", "Календарь"),
+            Pair("⊕", "Добавить"),
+            Pair("♧", "Напоминания"),
+            Pair("⚙", "Настройки")
+        )
 
-        root.addView(makeButton("＋ Добавить") {
-            val value = input.text.toString().trim()
-            if (value.isNotEmpty()) {
-                val list = loadItems(section).toMutableList()
-                list.add(value)
-                saveItems(section, list)
-                showSection(section)
+        actions.forEachIndexed { index, item ->
+            val button = TextView(this).apply {
+                text = item.first
+                textSize = if (index == 2) 30f else 27f
+                gravity = Gravity.CENTER
+                setTextColor(dark)
+                isClickable = true
+                setPadding(0, dp(5), 0, dp(5))
+                setOnClickListener {
+                    when (index) {
+                        0 -> showHome()
+                        1 -> showSection("📅 Календарь")
+                        2 -> showAddDialog()
+                        3 -> showSection("🔔 Напоминания")
+                        4 -> showSettings()
+                    }
+                }
             }
-        })
+
+            menu.addView(
+                button,
+                LinearLayout.LayoutParams(0, dp(54), 1f)
+            )
+        }
+
+        root.addView(menu)
+    }
+
+    private fun showSection(section: String) {
+        val root = page()
+
+        val header = text(section, 25f, dark, true)
+        header.setPadding(dp(20), dp(22), dp(16), dp(18))
+        root.addView(header)
+
+        val input = EditText(this).apply {
+            hint = "Новая запись"
+            setSingleLine(true)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+        }
+
+        root.addView(
+            input,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                setMargins(dp(14), dp(5), dp(14), dp(5))
+            }
+        )
+
+        val add = Button(this).apply {
+            text = "＋ Добавить"
+            isAllCaps = false
+            setOnClickListener {
+                val value = input.text.toString().trim()
+                if (value.isNotEmpty()) {
+                    val list = loadItems(section).toMutableList()
+                    list.add(value)
+                    saveItems(section, list)
+                    showSection(section)
+                }
+            }
+        }
+        root.addView(add)
 
         val scroll = ScrollView(this)
-        val listLayout = LinearLayout(this)
-        listLayout.orientation = LinearLayout.VERTICAL
-        listLayout.setPadding(12, 8, 12, 8)
+        val listLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
 
         val items = loadItems(section)
 
         if (items.isEmpty()) {
-            val empty = TextView(this)
-            empty.text = "Пока здесь пусто"
-            empty.textSize = 16f
+            val empty = text("Пока здесь пусто", 16f, gray)
             empty.gravity = Gravity.CENTER
-            empty.setPadding(12, 30, 12, 30)
+            empty.setPadding(dp(12), dp(30), dp(12), dp(30))
             listLayout.addView(empty)
         }
 
         items.forEachIndexed { index, value ->
-            val row = LinearLayout(this)
-            row.orientation = LinearLayout.HORIZONTAL
-            row.gravity = Gravity.CENTER_VERTICAL
-
-            val text = TextView(this)
-            text.text = value
-            text.textSize = 16f
-            text.setTextColor(Color.DKGRAY)
-            text.setPadding(12, 14, 8, 14)
-
-            row.addView(text, LinearLayout.LayoutParams(0, -2, 1f))
-
-            val delete = Button(this)
-            delete.text = "×"
-            delete.setOnClickListener {
-                val updated = loadItems(section).toMutableList()
-                updated.removeAt(index)
-                saveItems(section, updated)
-                showSection(section)
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
             }
 
+            val itemText = text(value, 16f, dark)
+            itemText.setPadding(dp(12), dp(14), dp(8), dp(14))
+            row.addView(
+                itemText,
+                LinearLayout.LayoutParams(0, -2, 1f)
+            )
+
+            val delete = Button(this).apply {
+                text = "×"
+                setOnClickListener {
+                    val updated = loadItems(section).toMutableList()
+                    updated.removeAt(index)
+                    saveItems(section, updated)
+                    showSection(section)
+                }
+            }
             row.addView(delete)
             listLayout.addView(row)
 
-            val divider = android.view.View(this)
-            divider.setBackgroundColor(Color.LTGRAY)
-            listLayout.addView(divider, LinearLayout.LayoutParams(-1, 1))
+            val divider = View(this).apply {
+                setBackgroundColor(Color.LTGRAY)
+            }
+            listLayout.addView(
+                divider,
+                LinearLayout.LayoutParams(-1, dp(1))
+            )
         }
 
         scroll.addView(listLayout)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
+        addBottomMenu(root)
+        setContentView(root)
+    }
+
+    private fun showAddDialog() {
+        val names = sections.map {
+            it.substringAfter(" ")
+        }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("Куда добавить запись?")
+            .setItems(names) { _, which ->
+                showSection(sections[which])
+            }
+            .setNegativeButton("Отмена", null)
+            .show()
+    }
+
+    private fun showSettings() {
+        val root = page()
+
+        val header = text("Настройки", 25f, dark, true)
+        header.setPadding(dp(20), dp(22), dp(16), dp(18))
+        root.addView(header)
+
+        val info = text(
+            "Мой органайзер\n\nВсе данные хранятся на этом телефоне.\nПриложение работает без интернета.",
+            16f,
+            gray
+        )
+        info.setPadding(dp(20), dp(20), dp(20), dp(20))
+        root.addView(info)
+
+        root.addView(
+            View(this),
+            LinearLayout.LayoutParams(-1, 0, 1f)
+        )
+
+        addBottomMenu(root)
         setContentView(root)
     }
 
@@ -238,6 +367,8 @@ class MainActivity : Activity() {
     }
 
     private fun saveItems(section: String, items: List<String>) {
-        prefs.edit().putString(section, items.joinToString("\n")).apply()
+        prefs.edit()
+            .putString(section, items.joinToString("\n"))
+            .apply()
     }
 }
