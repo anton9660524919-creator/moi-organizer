@@ -703,5 +703,4 @@ class MainActivity : Activity() {
     private fun drawShoppingItems() {
         shoppingList.removeAllViews()
 
-        val shown = shoppingItems.withIndex().filter {
-       
+        val shown = shoppingItems.withIndex().filter { indexed
